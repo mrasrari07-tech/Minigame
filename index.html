@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Find The Ball</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --accent1:#ff7ac4;
+  --accent2:#b65cff;
+  --bg:#f5f6fb;
+  --card:#ffffff;
+  --text:#181820;
+  --muted:#80808c;
+}
+
+/* RESET */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:var(--bg);
+  font-family:"Poppins",sans-serif;
+  color:var(--text);
+  padding:12px;
+  overflow:hidden;
+}
+
+/* APP CONTAINER */
+.app{width:100%;max-width:420px;}
+.card{
+  background:var(--card);
+  padding:20px 18px;
+  border-radius:22px;
+  box-shadow:0 12px 35px rgba(0,0,0,0.08);
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.badge{
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  padding:4px 10px;
+  border-radius:999px;
+  color:white;
+  font-size:0.75rem;
+}
+
+/* SCREEN SYSTEM */
+.screen{display:none;}
+.screen.active{display:block;}
+h2{text-align:center;font-size:1.2rem;margin-bottom:6px;}
+.desc{text-align:center;color:var(--muted);font-size:0.85rem;margin-bottom:14px;}
+
+/* BUTTONS */
+.btn{
+  padding:12px 18px;
+  border:none;
+  font-size:0.9rem;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:600;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  color:white;
+  width:100%;
+  box-shadow:0 5px 18px rgba(182,92,255,0.35);
+}
+.btn-ghost{
+  background:none;
+  color:var(--muted);
+}
+
+/* GAME */
+.cups-box{text-align:center;margin-top:10px;}
+.cups{
+  display:flex;
+  justify-content:center;
+  gap:22px;
+  margin:30px 0;
+}
+.cup{
+  width:70px;
+  height:70px;
+  background:#eee;
+  border-radius:16px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:2.2rem;
+  cursor:pointer;
+  transition:transform 0.25s,background 0.25s;
+  user-select:none;
+}
+.cup.pick{transform:scale(1.2);}
+.cup.win{background:#4ade80;color:white;}
+
+#statusMsg{
+  text-align:center;
+  margin-top:10px;
+  font-size:0.9rem;
+}
+
+/* JUMPSCARE VIDEO */
+#jumpscareVideo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;
+  z-index:50;
+}
+
+/* STOP BUTTON (OPTIONAL SAFETY) */
+#stopScareBtn{
+  position:fixed;
+  top:10px;
+  right:10px;
+  z-index:60;
+  padding:8px 14px;
+  border-radius:999px;
+  border:none;
+  font-size:0.8rem;
+  font-weight:600;
+  background:#ffffffdd;
+  cursor:pointer;
+  display:none;
+}
+
+/* EFFECTS */
+@keyframes shake{
+  0%,100%{transform:translate(0);}
+  20%{transform:translate(-6px,6px);}
+  50%{transform:translate(6px,-6px);}
+}
+.shake{animation:shake 0.15s infinite;}
+
+@keyframes flash{
+  0%,100%{background:#000}
+  50%{background:#300}
+}
+.flash{animation:flash 0.15s infinite;}
+
+/* CONFETTI */
+.confetti-piece{
+  position:fixed;
+  width:8px;
+  height:12px;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  top:-20px;
+  z-index:30;
+  opacity:0.9;
+  border-radius:2px;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);}
+  100%{transform:translateY(110vh) rotate(360deg);}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <div class="card">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div>
+        <strong>Find The Ball</strong>
+        <div style="font-size:0.7rem;color:var(--muted)">Win a mystery reward 🎁</div>
+      </div>
+      <div class="badge">Easy Win</div>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="screen-start" class="screen active">
+      <h2>Mini Challenge</h2>
+      <p class="desc">Watch the cups and try to find the hidden ball.</p>
+      <button class="btn btn-primary" id="btnStart">Start</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="screen">
+      <h2>Find It 🎯</h2>
+      <p class="desc">Tap Shuffle, then pick one cup.</p>
+
+      <div class="cups-box">
+        <div class="cups" id="cupArea">
+          <div class="cup" data-id="0">🥣</div>
+          <div class="cup" data-id="1">🥣</div>
+          <div class="cup" data-id="2">🥣</div>
+        </div>
+        <button class="btn btn-primary" id="btnShuffle">Shuffle</button>
+        <p id="statusMsg"></p>
+      </div>
+    </div>
+
+    <!-- REWARD SCREEN -->
+    <div id="screen-reward" class="screen">
+      <h2>Nice!</h2>
+      <p class="desc">You got it right! Tap below to reveal your reward.</p>
+      <button class="btn btn-primary" id="btnReveal">Reveal Reward</button>
+    </div>
+
+    <!-- FINAL SCREEN -->
+    <div id="screen-final" class="screen">
+      <h2>😂 GOT YOU</h2>
+      <p class="desc">Show this game to your friend and let them play next.</p>
+      <button class="btn btn-primary" id="btnRestart">Play Again</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- JUMPSCARE VIDEO + STOP BUTTON -->
+<video id="jumpscareVideo" src="jumpscare.mp4" preload="auto"></video>
+<button id="stopScareBtn">Stop</button>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function show(screenName){
+  document.querySelectorAll(".screen").forEach(p => p.classList.remove("active"));
+  $(`screen-${screenName}`).classList.add("active");
+}
+
+/* START */
+$('btnStart').onclick = () => show("game");
+
+/* CUP GAME */
+let shuffled = false;
+let canPick = false;
+const cups = document.querySelectorAll('.cup');
+
+function shuffleAnimation(){
+  shuffled = true;
+  canPick = false;
+  $('statusMsg').textContent = "Shuffling...";
+
+  let steps = 0;
+  const maxSteps = 6;
+
+  const interval = setInterval(() => {
+    steps++;
+    cups.forEach(cup => {
+      const dirX = (Math.random() > 0.5 ? 1 : -1);
+      const dirY = (Math.random() > 0.5 ? 1 : -1);
+      cup.style.transform = `translate(${dirX * 10}px, ${dirY * -8}px)`;
+      setTimeout(() => {
+        cup.style.transform = "translate(0,0)";
+      }, 120);
+    });
+
+    if (steps >= maxSteps){
+      clearInterval(interval);
+      $('statusMsg').textContent = "Pick one 👇";
+      canPick = true;
+    }
+  }, 150);
+}
+
+$('btnShuffle').onclick = () => {
+  shuffleAnimation();
+};
+
+cups.forEach(cup => {
+  cup.onclick = () => {
+    if (!shuffled || !canPick) return;
+
+    canPick = false;
+    cup.classList.add("pick");
+
+    setTimeout(() => {
+      cup.classList.add("win");
+      $('statusMsg').textContent = "🎉 Correct! You found it!";
+      launchConfetti();
+    }, 250);
+
+    setTimeout(() => {
+      show("reward");
+    }, 900);
+  };
+});
+
+/* CONFETTI */
+function launchConfetti(){
+  const pieces = 60;
+  for(let i = 0; i < pieces; i++){
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "vw";
+    piece.style.animationDuration = 1.8 + Math.random() * 0.9 + "s";
+    piece.style.animationDelay = Math.random() * 0.3 + "s";
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 3000);
+  }
+}
+
+/* JUMPSCARE */
+let scareFinished = false;
+
+$('btnReveal').onclick = () => {
+  startScare();
+};
+
+function startScare(){
+  scareFinished = false;
+  const video = $('jumpscareVideo');
+  const stopBtn = $('stopScareBtn');
+
+  video.style.display = "block";
+  stopBtn.style.display = "inline-block";
+
+  video.currentTime = 0;
+  video.play().catch(() => {});
+  document.body.classList.add("shake","flash");
+
+  if (navigator.vibrate){
+    navigator.vibrate([200,200,200]);
+  }
+}
+
+function endScareFlow(){
+  if (scareFinished) return;
+  scareFinished = true;
+
+  const video = $('jumpscareVideo');
+  const stopBtn = $('stopScareBtn');
+
+  video.pause();
+  video.style.display = "none";
+  stopBtn.style.display = "none";
+  document.body.classList.remove("shake","flash");
+
+  show("final");
+}
+
+$('jumpscareVideo').onended = () => {
+  endScareFlow();
+};
+
+$('stopScareBtn').onclick = () => {
+  endScareFlow();
+};
+
+/* RESTART */
+$('btnRestart').onclick = () => location.reload();
+</script>
+</body>
+</html>
